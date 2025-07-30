@@ -1,0 +1,32 @@
+## Compiled source #
+bin/
+obj/
+
+## User-specific files #
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build results #
+*.dll
+*.exe
+*.app
+*.log
+*.pdb
+*.cache
+*.dbmdl
+*.bak
+*.snapshot
+
+## OS-specific files #
+.DS_Store
+Thumbs.db
+
+## Rider #
+.idea/
+*.sln.iml
+
+## VS Code #
+.vsc
+.vs
