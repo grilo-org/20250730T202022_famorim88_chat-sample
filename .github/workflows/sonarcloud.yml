@@ -1,0 +1,65 @@
+name: "SonarCloud Analysis"
+on:
+  push:
+    branches: [ "master" ]
+  workflow_dispatch: {}
+
+jobs:
+  sonar-scan:
+    name: SonarCloud Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar a Raiz do Projeto
+        id: find-root
+        shell: bash
+        run: |
+          PROJECT_DIR="."
+          ALL_PROJECTS=$(find . -maxdepth 3 -name "*.sln" -o -name "settings.gradle" -o -name "settings.gradle.kts")
+          if [ -n "$ALL_PROJECTS" ]; then
+            PROJECT_DIR=$(dirname "$(echo "$ALL_PROJECTS" | head -n1)")
+          fi
+          echo "Projeto principal selecionado: $PROJECT_DIR"
+          echo "PROJECT_PATH=$PROJECT_DIR" >> $GITHUB_ENV
+      # Prepara o ambiente .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0.x' # Pode ajustar a versão se necessário
+
+      # Instala o scanner do Sonar para .NET
+      - name: Install SonarCloud scanner
+        shell: bash
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet tool install --global dotnet-sonarscanner
+
+      # Inicia a análise do Sonar
+      - name: Begin SonarCloud Scan
+        working-directory: ${{ env.PROJECT_PATH }}
+        shell: bash
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet sonarscanner begin \
+            /k:"grilo-org_20250730T202022_famorim88_chat-sample" \
+            /o:"grilo-org" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      # Compila o projeto .NET
+      - name: Build .NET Project
+        working-directory: ${{ env.PROJECT_PATH }}
+        shell: bash
+        run: dotnet build --no-incremental
+
+      # Finaliza e envia a análise
+      - name: End SonarCloud Scan
+        working-directory: ${{ env.PROJECT_PATH }}
+        shell: bash
+        run: |
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
